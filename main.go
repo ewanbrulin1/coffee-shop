@@ -4,28 +4,12 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/ewanb/CoffeeGo/coffee-shop-api/handlers" // Importation du package handlers
+	"github.com/ewanb/CoffeeGo/coffee-shop-api/handlers"
+	"github.com/ewanb/CoffeeGo/coffee-shop-api/middleware"
 	"github.com/gorilla/mux"
 )
 
 // NOTE: Les fonctions RespondJSON et RespondError sont maintenant dans handlers/utils.go
-
-// --- Middleware CORS ---------------------------------------------------------
-
-func corsMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PATCH, DELETE, OPTIONS")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
-
-		if r.Method == "OPTIONS" {
-			w.WriteHeader(http.StatusNoContent)
-			return
-		}
-
-		next.ServeHTTP(w, r)
-	})
-}
 
 // --- Fonction Main -----------------------------------------------------------
 
@@ -47,10 +31,12 @@ func main() {
 	r.HandleFunc("/orders/{id}/status", handlers.UpdateOrderStatus).Methods("PATCH")
 	r.HandleFunc("/orders/{id}", handlers.DeleteOrder).Methods("DELETE")
 
+	// Appliquer le middleware CORS au router
+	r.Use(middleware.CorsMiddleware)
+
 	fmt.Println("☕ Serveur de l'API Coffee Shop démarré sur http://localhost:8080")
 
-	err := http.ListenAndServe(":8080", corsMiddleware(r))
-	if err != nil {
+	if err := http.ListenAndServe(":8080", r); err != nil {
 		fmt.Printf("Erreur lors du démarrage du serveur: %s\n", err)
 	}
 }
